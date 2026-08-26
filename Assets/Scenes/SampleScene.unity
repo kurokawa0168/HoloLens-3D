@@ -151,19 +151,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0d212262eaf63b4eac36378ce0a3241, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  records:
-  - qrCode: s001
-    studentName: "\u738B\u5C0F\u660E"
-    status: "\u5DF2\u5230"
-  - qrCode: s002
-    studentName: "\u674E\u5C0F\u83EF"
-    status: "\u5DF2\u5230"
-  - qrCode: s003
-    studentName: "\u9673\u5C0F\u7F8E"
-    status: "\u8ACB\u5047"
-  - qrCode: e001
-    studentName: "\u6559\u5E2B\u6E2C\u8A66\u9EDE"
-    status: '-'
+  apiUrl: https://hololens-723683201885.asia-east1.run.app/api/admin/users
 --- !u!4 &207147542
 Transform:
   m_ObjectHideFlags: 0

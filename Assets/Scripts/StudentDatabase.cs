@@ -1,47 +1,100 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
 [Serializable]
-public class StudentRecord
+public class UserRecord
 {
-    public string qrCode;       // QR code 解碼出來的內容,例如 "s001"
-    public string studentName;  // 顯示用姓名
-    public string status;       // 狀態,例如 "已到"、"請假"
+    public string U_id;
+    public string user_id;
+    public string name;
+    public string account;   // 對應QR code內容,例如 "s001"
+    public string role;      // "student" 或 "teacher"
+}
+
+[Serializable]
+public class UserListResponse
+{
+    public bool success;
+    public List<UserRecord> users;
 }
 
 public class StudentDatabase : MonoBehaviour
 {
-    // 這個清單可以直接在 Unity Inspector 面板裡編輯,不用每次改都重新寫程式
-    [SerializeField]
-    private List<StudentRecord> records = new List<StudentRecord>
-    {
-        new StudentRecord{ qrCode = "s001", studentName = "王小明", status = "已到" },
-        new StudentRecord{ qrCode = "s002", studentName = "李小華", status = "已到" },
-        new StudentRecord{ qrCode = "s003", studentName = "陳小美", status = "請假" },
-        new StudentRecord{ qrCode = "e001", studentName = "教師測試點", status = "-" },
-    };
+    [SerializeField] private string apiUrl = "https://hololens-723683201885.asia-east1.run.app/api/admin/users";
 
-    private Dictionary<string, StudentRecord> lookup;
+    private Dictionary<string, UserRecord> lookup = new Dictionary<string, UserRecord>();
+    public bool IsLoaded { get; private set; } = false;
+    public string LastError { get; private set; } = null;
 
-    private void Awake()
+    public event Action OnDataChanged;
+
+    private void Start()
     {
-        // 遊戲開始時,把清單轉成查詢用的字典,查詢速度比較快
-        lookup = new Dictionary<string, StudentRecord>();
-        foreach (var record in records)
+        StartCoroutine(FetchUsers());
+    }
+
+    private IEnumerator FetchUsers()
+    {
+        using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
         {
-            if (!lookup.ContainsKey(record.qrCode))
-                lookup.Add(record.qrCode, record);
+            var operation = request.SendWebRequest();
+            float elapsed = 0f;
+            float manualTimeout = 10f;
+
+            while (!operation.isDone)
+            {
+                elapsed += Time.deltaTime;
+                if (elapsed >= manualTimeout)
+                {
+                    request.Abort();
+                    LastError = "手動逾時中斷(伺服器無回應超過10秒)";
+                    Debug.LogError(LastError);
+                    OnDataChanged?.Invoke();
+                    yield break;
+                }
+                yield return null;
+            }
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                LastError = $"{request.result} | {request.error} | Code:{request.responseCode}";
+                Debug.LogError($"讀取學生資料失敗: {LastError}");
+                OnDataChanged?.Invoke();
+                yield break;
+            }
+
+            string json = request.downloadHandler.text;
+            UserListResponse response = JsonUtility.FromJson<UserListResponse>(json);
+
+            lookup.Clear();
+            foreach (var user in response.users)
+            {
+                if (!string.IsNullOrEmpty(user.account) && !lookup.ContainsKey(user.account))
+                {
+                    lookup.Add(user.account, user);
+                }
+            }
+
+            IsLoaded = true;
+            Debug.Log($"成功載入 {lookup.Count} 筆學生資料");
+            OnDataChanged?.Invoke();
         }
     }
 
     public string GetDisplayText(string qrCode)
     {
-        if (lookup.TryGetValue(qrCode, out var record))
+        if (!IsLoaded)
         {
-            return $"{record.studentName}\n{record.status}";
+            return LastError != null ? $"連線失敗:\n{LastError}" : "資料載入中...";
         }
-        // 掃到不在名單裡的QR code時,至少顯示原始內容方便除錯
-        return $"未登錄QR: {qrCode}";
+        if (lookup.TryGetValue(qrCode, out var user))
+        {
+            string roleText = user.role == "teacher" ? "教師" : "學生";
+            return $"{user.name}\n({roleText})";
+        }
+        return $"未登錄: {qrCode}";
     }
 }
