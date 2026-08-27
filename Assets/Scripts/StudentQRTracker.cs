@@ -7,8 +7,17 @@ public class StudentQRTracker : MonoBehaviour
     [SerializeField] private ARMarkerManager markerManager;
     [SerializeField] private StudentDatabase studentDatabase;
 
-    private void OnEnable() => markerManager.markersChanged += OnMarkersChanged;
-    private void OnDisable() => markerManager.markersChanged -= OnMarkersChanged;
+    private void OnEnable()
+    {
+        markerManager.markersChanged += OnMarkersChanged;
+        studentDatabase.OnDataChanged += RefreshAllLabels;
+    }
+
+    private void OnDisable()
+    {
+        markerManager.markersChanged -= OnMarkersChanged;
+        studentDatabase.OnDataChanged -= RefreshAllLabels;
+    }
 
     private void OnMarkersChanged(ARMarkersChangedEventArgs args)
     {
@@ -16,8 +25,15 @@ public class StudentQRTracker : MonoBehaviour
         {
             UpdateLabelText(marker);
         }
-
         foreach (var marker in args.updated)
+        {
+            UpdateLabelText(marker);
+        }
+    }
+
+    private void RefreshAllLabels()
+    {
+        foreach (var marker in markerManager.trackables)
         {
             UpdateLabelText(marker);
         }

@@ -151,19 +151,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0d212262eaf63b4eac36378ce0a3241, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  records:
-  - qrCode: s001
-    studentName: "\u738B\u5C0F\u660E"
-    status: "\u5DF2\u5230"
-  - qrCode: s002
-    studentName: "\u674E\u5C0F\u83EF"
-    status: "\u5DF2\u5230"
-  - qrCode: s003
-    studentName: "\u9673\u5C0F\u7F8E"
-    status: "\u8ACB\u5047"
-  - qrCode: e001
-    studentName: "\u6559\u5E2B\u6E2C\u8A66\u9EDE"
-    status: '-'
+  apiUrl: https://hololens-723683201885.asia-east1.run.app/api/admin/users
 --- !u!4 &207147542
 Transform:
   m_ObjectHideFlags: 0
@@ -670,6 +658,84 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!1001 &1543426053
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 851692332604621608, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: studentDatabase
+      value: 
+      objectReference: {fileID: 207147541}
+    - target: {fileID: 851692332604621608, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: mainCameraTransform
+      value: 
+      objectReference: {fileID: 1375737369}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2519439584435918174, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5437986670938371081, guid: 6e7245c376b407c4193f88f2c76e02f7,
+        type: 3}
+      propertyPath: m_Name
+      value: EyeTrackingManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6e7245c376b407c4193f88f2c76e02f7, type: 3}
 --- !u!1 &1964602097
 GameObject:
   m_ObjectHideFlags: 0
@@ -682,6 +748,7 @@ GameObject:
   - component: {fileID: 1964602099}
   - component: {fileID: 1964602098}
   - component: {fileID: 1964602101}
+  - component: {fileID: 1964602102}
   m_Layer: 0
   m_Name: XR Origin
   m_TagString: Untagged
@@ -704,7 +771,7 @@ MonoBehaviour:
   markerPrefab: {fileID: 3316476429106574233, guid: 78338c6dd13f9a7409634ecd38e1e67d,
     type: 3}
   enabledMarkerTypes: 01000000
-  defaultTransformMode: 0
+  defaultTransformMode: 1
 --- !u!114 &1964602099
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -752,6 +819,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   markerManager: {fileID: 1964602098}
   studentDatabase: {fileID: 207147541}
+--- !u!114 &1964602102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964602097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7905acad027ce744eb62f27d1dd7908c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  markerManager: {fileID: 1964602098}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -760,3 +840,4 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 1964602100}
   - {fileID: 207147542}
+  - {fileID: 1543426053}
