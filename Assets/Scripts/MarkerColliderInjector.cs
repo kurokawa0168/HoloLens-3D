@@ -38,11 +38,14 @@ public class MarkerColliderInjector : MonoBehaviour
     /// </summary>
     private void AddColliderIfNeeded(ARMarker marker)
     {
+
         if (marker.gameObject.GetComponent<BoxCollider>() == null)
         {
             BoxCollider col = marker.gameObject.AddComponent<BoxCollider>();
             // 不要寫死，直接用系統自動偵測到的marker真實物理尺寸
-            col.size = new Vector3(marker.size.x, marker.size.y, 0.02f);
+            // 新增：多留一點容錯空間，補償裝置本身約5~15公分的視線精準度極限
+            float padding = 0.08f;
+            col.size = new Vector3(marker.size.x + padding, marker.size.y + padding, 0.02f);
             col.center = Vector3.zero;
             Debug.Log($"[偵錯] 已幫 marker「{marker.GetDecodedString()}」加上 BoxCollider");
         }

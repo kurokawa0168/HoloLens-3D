@@ -5,23 +5,15 @@ using Microsoft.MixedReality.OpenXR;
 /// 視線 Dwell 判斷主控腳本
 /// 職責：
 ///   1. 每幀用 EyeGazeProvider 提供的視線 Ray 做 Physics.Raycast
-///   2. 判斷有沒有打中「座位面板」(PanelSeatIdentity)
+///   2. 判斷有沒有打中「座位面板」(ARMarker)
 ///   3. 累加/歸零 Dwell 計時，同步驅動 DwellRingUI 的視覺呈現
 ///   4. Dwell 時間到 → 生成獨立的詳細資訊介面
 ///
-/// 設計原則（對齊今天確認的架構決策）：
-///   - 詳細介面是「另外生成的獨立物件」，不掛在燈號面板底下、
-///     不寫進組員的 activePanels 字典，自己管理自己的生命週期。
-///   - 燈號面板被組員的 QRReader 銷毀時，詳細介面不會被連坐銷毀，
-///     要等使用者視線移開介面本身才關閉（第二階段的透明度邏輯，之後接續）。
-///
-/// 【新增：視線容錯機制】
-///   實機測試發現：眼動追蹤本身有生理性的微小抖動(jitter)，
-///   只要某一幀視線剛好沒打中目標（哪怕只有一幀），原本的邏輯會立刻把
-///   dwellTimer 整個歸零重來，導致「明明一直盯著同一張QR碼看」，
-///   卻因為中間偶爾一兩幀的追蹤雜訊，永遠無法連續累積滿 dwellThreshold。
-///   加上 missTolerance 這個緩衝時間後：視線短暫離開目標不會立刻清空進度，
-///   只有連續失準超過 missTolerance 秒，才會真的重置。
+/// 【效能修正】先前為了排查 Raycast 打不中的問題，在 Update() 裡加了
+/// 大量逐幀執行的 Debug.Log（[診斷]/[偵錯] 開頭）。這些字串組合(interpolation)
+/// 加上 Console I/O，在 HoloLens 這種行動裝置上一秒執行 60 次會持續消耗 CPU，
+/// 是造成裝置發熱的主要嫌疑。問題已排查完成、流程已確認打通，
+/// 這裡全部移除，只保留真正代表「出錯了」的 Debug.LogError。
 /// </summary>
 public class GazeDwellManager : MonoBehaviour
 {
@@ -40,8 +32,8 @@ public class GazeDwellManager : MonoBehaviour
     [Tooltip("拖入已設定好 CanvasGroup / BoxCollider / DetailPanelController 的 DetailPanel Prefab")]
     public GameObject detailPanelPrefab;
 
-    [Tooltip("拖入場景裡的 StudentDatabase 物件")]
-    public StudentDatabase studentDatabase;
+    [Tooltip("拖入場景裡掛著 StudentDetailData 元件的物件（負責輪詢後端 dashboard 專注度資料）")]
+    public StudentDetailData studentDetailData;
 
     [Tooltip("拖入 Main Camera，詳細介面會生成在它底下，讓介面跟著教師視角走")]
     public Transform mainCameraTransform;
@@ -50,7 +42,7 @@ public class GazeDwellManager : MonoBehaviour
     private ARMarker currentTarget;
     private float dwellTimer = 0f;
 
-    [Header("視線容錯（新增：避免感測器抖動或QR碼邊緣誤差讓Dwell瞬間歸零）")]
+    [Header("視線容錯（避免感測器抖動或QR碼邊緣誤差讓Dwell瞬間歸零）")]
     [Tooltip("視線短暫離開目標時，容許的最大中斷時間（秒）。超過這個時間才會真的重置Dwell計時")]
     public float missTolerance = 0.2f;
 
@@ -78,49 +70,29 @@ public class GazeDwellManager : MonoBehaviour
     {
         if (gazeProvider == null) return;
 
-        // 【診斷用】確認這一幀有沒有拿到有效視線資料
         bool hasGaze = gazeProvider.TryGetGazeRay(out Vector3 origin, out Vector3 direction);
         if (!hasGaze)
         {
-            Debug.Log("[診斷] 沒有拿到有效視線資料 (isTracked=false 或裝置未就緒)");
-            // 【修改】原本這裡直接呼叫 ResetDwell() 整個歸零，
-            // 改成 HandleGazeMiss()：先看看有沒有超過容忍時間，
-            // 短暫失去視線資料（比如裝置瞬間追丟）不會馬上清空進度
+            // 短暫失去視線資料（比如裝置瞬間追丟）不會馬上清空進度，
+            // 交給 HandleGazeMiss() 判斷是否已經超過容忍時間。
             HandleGazeMiss();
             return;
         }
 
         Ray gazeRay = new Ray(origin, direction);
 
-        // 【診斷用】每幀印出視線 Ray,確認起點/方向數值合理（不是全部是0）
-        Debug.Log($"[診斷] 視線 Ray origin={origin} direction={direction}");
-
         if (Physics.Raycast(gazeRay, out RaycastHit hit, maxRayDistance))
         {
-            // 【診斷用】確認Raycast到底打中了什麼物件，不管是不是座位面板
-            Debug.Log($"[診斷] Raycast 打中物件: {hit.collider.gameObject.name}");
-
             ARMarker hitMarker = hit.collider.GetComponentInParent<ARMarker>();
 
             if (hitMarker != null)
             {
-                Debug.Log($"[偵錯] 這次打中的物件有 ARMarker 元件，QR內容={hitMarker.GetDecodedString()}");
                 HandleGazeOnPanel(hitMarker, hit.point);
                 return;
             }
-            else
-            {
-                Debug.Log("[診斷] 打中的物件沒有 PanelSeatIdentity 元件");
-            }
-        }
-        else
-        {
-            // 【診斷用】確認是不是Raycast距離內完全沒打到任何東西
-            Debug.Log($"[診斷] Raycast 沒打中任何東西 (maxRayDistance={maxRayDistance})");
         }
 
-        // 【修改】沒打中任何面板（打到空氣，或打到別的物件）
-        // 原本直接 ResetDwell()，改成先進 HandleGazeMiss() 判斷是否在容忍範圍內
+        // 沒打中任何面板（打到空氣，或打到別的物件，或完全沒打中任何東西）
         HandleGazeMiss();
     }
 
@@ -136,7 +108,7 @@ public class GazeDwellManager : MonoBehaviour
             dwellTimer = 0f;
         }
 
-        // 【新增】這一幀真的打中了目標，代表視線是準的，
+        // 這一幀真的打中了目標，代表視線是準的，
         // 把失準計時器清零，重新給滿容忍額度，避免「這次沒打中」的舊紀錄殘留影響下一次判斷
         missTimer = 0f;
 
@@ -155,7 +127,7 @@ public class GazeDwellManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 【新增】這一幀視線沒有打中任何有效目標時呼叫（取代原本直接呼叫 ResetDwell()）。
+    /// 這一幀視線沒有打中任何有效目標時呼叫（取代原本直接呼叫 ResetDwell()）。
     /// 不會立刻清空 Dwell 進度，而是先累計「連續失準時間」，
     /// 只有連續失準超過 missTolerance，才會真的呼叫 ResetDwell() 全部歸零。
     /// 這樣可以吸收掉眼動追蹤本身的微小抖動，避免明明一直在盯著同一個目標，
@@ -173,7 +145,7 @@ public class GazeDwellManager : MonoBehaviour
             // 連續失準時間超過容忍範圍，才是真的判定「視線離開了」，全部歸零重來
             ResetDwell();
         }
-        // 【重點】在容忍時間內：dwellTimer 維持原值不變、ringUI 也先不隱藏，
+        // 在容忍時間內：dwellTimer 維持原值不變、ringUI 也先不隱藏，
         // 讓使用者感覺不到這次短暫的中斷，視線只要飄回目標，就能無縫接續累積進度
     }
 
@@ -184,7 +156,7 @@ public class GazeDwellManager : MonoBehaviour
     {
         currentTarget = null;
         dwellTimer = 0f;
-        missTimer = 0f; // 【新增】連失準計時器也一併歸零，確保狀態完全乾淨，不影響下一次判斷
+        missTimer = 0f; // 連失準計時器也一併歸零，確保狀態完全乾淨，不影響下一次判斷
         if (ringUI != null) ringUI.Hide();
     }
 
@@ -235,27 +207,47 @@ public class GazeDwellManager : MonoBehaviour
         {
             controller.eyeGazeProvider = gazeProvider;
 
-            // 第6步新增：查資料庫，把學生姓名/狀態填進面板
-            if (studentDatabase != null)
+            if (studentDetailData != null)
             {
-                if (!studentDatabase.IsLoaded)
+                if (!studentDetailData.IsLoaded)
                 {
-                    controller.SetContent("資料載入中...", "");
+                    // 資料還沒抓回來（App剛啟動、或這次輪詢還在路上），
+                    // 先顯示「資料載入中」佔位，四個細項先給 0，避免面板顯示奇怪的空值。
+                    controller.SetContent("資料載入中...", "", 0f, 0f, 0f, 0f);
                     return;
                 }
-                UserRecord record = studentDatabase.GetRecord(seatId);
+
+                StudentDetailRecord record = studentDetailData.GetRecord(seatId);
+
                 if (record != null)
                 {
-                    controller.SetContent(record.name, record.role == "teacher" ? "教師" : "學生");
+                    // 【暫時簡化】狀態欄位先直接顯示後端原始的 scoreColor 字串（例如 "red"/"green"），
+                    // 不做燈號對照轉換。之後要顯示中文/emoji燈號的話，再回來這裡加 switch 判斷。
+                    string statusLabel = record.scoreColor;
+
+                    // 後端目前只有 quizAccuracy（測驗正確率），沒有直接的「錯題率」欄位，
+                    // 用 1 減正確率反推錯題率。之後如果組員在 API 直接加了 errorRate 欄位，
+                    // 這裡要記得改回直接讀取，不用再自己算。
+                    float errorRate = 1f - record.quizAccuracy;
+
+                    controller.SetContent(
+                        record.name,
+                        statusLabel,
+                        record.effectiveParticipationRate,
+                        errorRate,
+                        record.repeatWatchRatio,
+                        record.quizParticipation
+                    );
                 }
                 else
                 {
-                    controller.SetContent("未登錄學生", $"QR: {seatId}");
+                    // 這個 QR 碼帳號在後端資料庫裡查不到對應的學生（例如測試用QR碼、或帳號打錯）
+                    controller.SetContent("未登錄學生", $"QR: {seatId}", 0f, 0f, 0f, 0f);
                 }
             }
             else
             {
-                Debug.LogError("[GazeDwellManager] 生成的 DetailPanel 找不到 DetailPanelController 元件,請確認 Prefab 設定。");
+                Debug.LogError("[GazeDwellManager] studentDetailData 尚未在 Inspector 指定,無法查詢專注度資料。");
             }
 
             // 【已移除位置/角度的強制覆蓋】原本這裡會寫死 localPosition / localRotation,
@@ -271,18 +263,6 @@ public class GazeDwellManager : MonoBehaviour
             {
                 initialCanvasGroup.alpha = 0.7f;
             }
-
-            // ↓↓↓ 給後端合作的位置 ↓↓↓
-            // 這裡就是「詳細介面需要顯示的學生資料」該填入的地方。
-            // 目前 SeatManager.cs 尚未串接真實資料（回傳寫死的假資料），
-            // 之後後端接上即時分析結果後，預期會是類似：
-            //
-            //   StudentStatus status = BackendClient.GetStudentStatus(seatId);
-            //   detailPanelUI.SetContent(status.studentName, status.focusScore, status.distractionCount, ...);
-            //
-            // 目前先用座位編號本身佔位，方便先跑通「視線觸發流程」，
-            // 等後端資料格式確定後再回來這裡替換成真實資料。
-            Debug.Log($"[眼動模組] Dwell 觸發，開啟座位 {seatId} 的詳細介面（佔位版本，尚未接後端資料）");
         }
     }
 }

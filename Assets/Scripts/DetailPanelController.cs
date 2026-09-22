@@ -12,6 +12,11 @@ using UnityEngine;
 ///   詳細介面是「完全獨立管理生命週期」的物件,不依賴 GazeDwellManager
 ///   每幀記得來管它。GazeDwellManager 只負責「生成」,生成之後這顆腳本
 ///   自己負責「活多久、什麼時候該死」。
+///
+/// 【本次新增】版面欄位從原本的「姓名/狀態」兩格，擴充成完整的專注度細項：
+///   姓名、狀態(紅黃綠燈號文字)、參與度、錯題率、重複觀看片段、測驗參與率。
+///   對應後端 /api/admin/dashboard 的 metrics 資料，由 GazeDwellManager
+///   查完 StudentDetailData 之後，透過擴充版的 SetContent() 一次性傳進來。
 /// </summary>
 public class DetailPanelController : MonoBehaviour
 {
@@ -30,9 +35,9 @@ public class DetailPanelController : MonoBehaviour
     public float destroyThreshold = 0.2f;
 
     [Tooltip("視線暫時沒打中面板時，可以容忍幾秒鐘不要馬上開始變透明（避免眼動雜訊誤判）。")]
-public float missTolerance = 0.3f;
+    public float missTolerance = 0.3f;
 
-private float missTimer = 0f;
+    private float missTimer = 0f;
 
     // 這個物件自己身上的 CanvasGroup,用來讀寫 alpha。
     // 不用 public 拖曳,因為它一定是掛在同一個物件上,Start() 時自己抓就好。
@@ -44,12 +49,27 @@ private float missTimer = 0f;
 
     private float spawnTime;
 
-    [Header("內容顯示（第6步新增）")]
+    [Header("內容顯示（第6步：姓名/狀態）")]
     [Tooltip("拖入 DetailPanel 底下的 StudentName 文字物件")]
     public TMPro.TMP_Text studentNameText;
 
-    [Tooltip("拖入 DetailPanel 底下的 StatusDuration 文字物件")]
+    [Tooltip("拖入 DetailPanel 底下的 StatusDuration 文字物件（顯示紅黃綠燈號文字）")]
     public TMPro.TMP_Text statusText;
+
+    // ↓↓↓【本次新增】專注度細項欄位，對應後端 dashboard API 的 metrics 資料 ↓↓↓
+    [Header("內容顯示（新增：專注度細項，對應後端 metrics 資料）")]
+    [Tooltip("拖入 Prefab 上新複製出來的 ParticipationText 文字物件（顯示參與度）")]
+    public TMPro.TMP_Text participationText;
+
+    [Tooltip("拖入 Prefab 上新複製出來的 ErrorRateText 文字物件（顯示錯題率）")]
+    public TMPro.TMP_Text errorRateText;
+
+    [Tooltip("拖入 Prefab 上新複製出來的 RepeatWatchText 文字物件（顯示重複觀看片段比例）")]
+    public TMPro.TMP_Text repeatWatchText;
+
+    [Tooltip("拖入 Prefab 上新複製出來的 QuizParticipationText 文字物件（顯示測驗參與率）")]
+    public TMPro.TMP_Text quizParticipationText;
+    // ↑↑↑ 新增結束 ↑↑↑
 
     void Start()
     {
@@ -83,7 +103,7 @@ private float missTimer = 0f;
 
         // GazeCheckResult 有三種可能:
         //   HitSelf   → 視線打中自己 → alpha 上升
-        //   HitOther / Missed → 視線沒打中自己(打到別的東西,或完全沒打到任何東西) → alpha 下降
+        //   Missed    → 視線沒打中自己(打到別的東西,或完全沒打到任何東西) → alpha 下降
         //   NoGazeData → 這一幀視線資料本身就無效(眨眼、暫時遺失追蹤) → 維持原狀,不升不降
         // 特別處理 NoGazeData,是為了避免使用者只是眨了一下眼,
         // 介面就被誤判成「沒在看」而開始閃爍變淡。
@@ -169,10 +189,26 @@ private float missTimer = 0f;
 
     /// <summary>
     /// 由 GazeDwellManager 在生成這個面板後呼叫，把學生資料填進去。
+    ///
+    /// 【本次擴充】原本只有 studentName / status 兩個參數，
+    /// 現在補上四個專注度細項，對應後端 /api/admin/dashboard 的 metrics 欄位：
+    ///   participation      → effectiveParticipationRate（參與度，0~1 的比例）
+    ///   errorRate          → 1 - quizAccuracy（錯題率，用正確率反推）
+    ///   repeatWatch        → repeatWatchRatio（重複觀看片段比例）
+    ///   quizParticipation  → quizParticipation（測驗參與率）
+    ///
+    /// 這些數值統一以「0~1 的比例」傳進來，轉成百分比字串的工作交給這裡處理，
+    /// 呼叫端（GazeDwellManager）只需要把原始比例丟進來就好，不用重複寫格式化邏輯。
     /// </summary>
-    public void SetContent(string studentName, string status)
+    public void SetContent(string studentName, string status, float participation, float errorRate, float repeatWatch, float quizParticipation)
     {
         if (studentNameText != null) studentNameText.text = studentName;
         if (statusText != null) statusText.text = status;
+
+        // ↓↓↓ 新增的四個欄位，寫法統一：F0 = 四捨五入到整數位的百分比 ↓↓↓
+        if (participationText != null) participationText.text = $"參與度: {participation * 100f:F0}%";
+        if (errorRateText != null) errorRateText.text = $"錯題率: {errorRate * 100f:F0}%";
+        if (repeatWatchText != null) repeatWatchText.text = $"重複觀看: {repeatWatch * 100f:F0}%";
+        if (quizParticipationText != null) quizParticipationText.text = $"測驗參與率: {quizParticipation * 100f:F0}%";
     }
 }

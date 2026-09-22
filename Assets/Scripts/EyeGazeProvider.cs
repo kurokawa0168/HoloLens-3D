@@ -16,6 +16,9 @@ using UnityEngine.XR;
 /// </summary>
 public class EyeGazeProvider : MonoBehaviour
 {
+    [Tooltip("拖入場景裡的 XR Origin（追蹤根節點）。注意：不是 Main Camera！")]
+    public Transform trackingOriginTransform;
+
     // 快取住的眼動裝置，避免每一幀都重新搜尋一次（效能考量）
     private InputDevice eyeTrackingDevice;
 
@@ -64,9 +67,19 @@ public class EyeGazeProvider : MonoBehaviour
     }
 
     /// <summary>
-    /// 步驟 2 + 3：直接向裝置詢問「視線起點位置」與「視線方向」這兩個特徵值
+    /// 步驟 2 + 3：直接向裝置詢問「視線起點位置」與「視線方向」這兩個特徵值。
     /// （HoloLens 2 的 Eye Gaze Interaction Profile 是用 Pose 的方式提供資料，
     ///   跟一般雙眼追蹤裝置用的 Eyes struct 是不同系統，這裡改用正確的 EyeTrackingUsages）
+    ///
+    /// 步驟 4（修正）：座標轉換。
+    /// OpenXR 回傳的 localOrigin / localRotation，是相對於「追蹤根節點」
+    /// （也就是 XR Origin）算好的，等同於已經是可以直接使用的世界座標系。
+    /// 這裡要用 XR Origin 的 Transform 去轉換——絕對不能用 Main Camera 的 Transform，
+    /// 因為 Main Camera 身上掛了 PoseDriver，每一幀都在跟著頭部即時轉動；
+    /// 如果拿一個「本身就在轉動」的座標系去二次轉換一組「已經算好的」資料，
+    /// 等於把頭部旋轉疊加了兩次——頭轉得越多、誤差就越大，正對前方看時反而感覺不出來。
+    /// 這正是先前「不同角度 Dwell 抓不準、面板盯著看也會消失」的根本原因。
+    ///
     /// 回傳 true 代表這一幀成功拿到有效、且「已被系統追蹤中」的視線資料
     /// </summary>
     public bool TryGetGazeRay(out Vector3 origin, out Vector3 direction)
@@ -81,27 +94,28 @@ public class EyeGazeProvider : MonoBehaviour
             return false;
         }
 
-        // 步驟 2：視線起點（貼近眼睛的位置）
+        // 視線起點（貼近眼睛的位置）
         bool gotPosition = eyeTrackingDevice.TryGetFeatureValue(
-        UnityEngine.XR.OpenXR.Features.Interactions.EyeTrackingUsages.gazePosition, out Vector3 localOrigin);
+            UnityEngine.XR.OpenXR.Features.Interactions.EyeTrackingUsages.gazePosition, out Vector3 localOrigin);
 
-        // 步驟 3：視線方向（四元數，需轉成向量才能餵給 Physics.Raycast）
+        // 視線方向（四元數，需轉成向量才能餵給 Physics.Raycast）
         bool gotRotation = eyeTrackingDevice.TryGetFeatureValue(
-        UnityEngine.XR.OpenXR.Features.Interactions.EyeTrackingUsages.gazeRotation, out Quaternion localRotation);
-
-        // 步驟 3：視線方向（四元數，需轉成向量才能餵給 Physics.Raycast）
+            UnityEngine.XR.OpenXR.Features.Interactions.EyeTrackingUsages.gazeRotation, out Quaternion localRotation);
 
         if (!gotPosition || !gotRotation)
         {
             return false;
         }
 
-        // 【關鍵修正】OpenXR 回報的是本地座標(相對於 XR Origin/ 追蹤原點),
-        // 必須用 Main Camera 的 Transform 轉換成世界座標,才能跟場景裡的
-         // AR_Panel(世界座標)放在同一個空間比較,Raycast 才有意義。
-        Transform cameraTransform = Camera.main.transform;
-        origin = cameraTransform.TransformPoint(localOrigin);
-        direction = cameraTransform.TransformDirection(localRotation * Vector3.forward);
+        if (trackingOriginTransform == null)
+        {
+            Debug.LogError("[EyeGazeProvider] trackingOriginTransform 尚未指定，請在 Inspector 拖入 XR Origin。");
+            return false;
+        }
+
+        // 用 XR Origin（追蹤根節點）轉換，不是 Camera.main
+        origin = trackingOriginTransform.TransformPoint(localOrigin);
+        direction = trackingOriginTransform.TransformDirection(localRotation * Vector3.forward);
 
         return true;
     }
