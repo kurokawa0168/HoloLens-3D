@@ -45,9 +45,6 @@ public class MarkerColliderInjector : MonoBehaviour
             col = marker.gameObject.AddComponent<BoxCollider>();
             Debug.Log($"[MarkerColliderInjector] 已幫 marker「{marker.GetDecodedString()}」加上 BoxCollider");
         }
-<<<<<<< Updated upstream
-        Debug.Log($"[診斷] 收到更新: {marker.GetDecodedString()}，時間: {Time.time:F1}");
-=======
 
         float lightOffset = qrTracker != null ? qrTracker.LightOffset : fallbackLightOffset;
 
@@ -55,6 +52,5 @@ public class MarkerColliderInjector : MonoBehaviour
         Vector3 localUp = marker.transform.InverseTransformDirection(Vector3.up);
         col.center = localUp * (marker.size.y / 2f + lightOffset);
         col.size = Vector3.one * cubeSize;
->>>>>>> Stashed changes
     }
 }
