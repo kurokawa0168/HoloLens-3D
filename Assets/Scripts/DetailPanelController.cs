@@ -1,214 +1,258 @@
-using UnityEngine;
+ï»¿using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
-/// ±¾¦b DetailPanel(¸Ô²Ó¸ê°T¤¶­±)¤Wªº¸}¥»¡C
-/// ­t³d³o­Ó¤¶­±¡u¦Û¤v¡vªº¥Í©R¶g´Á:
-///   1. ¨C¤@´V°İ EyeGazeProvider ®³¥Ø«eªºµø½u Ray
-///   2. ¥Î³o±ø Ray µo Raycast,§PÂ_µø½u¦³¨S¦³¥´¤¤¡u¦Û¤v¡vªº Collider
-///   3. ¥´¤¤ ¡÷ alpha ©¹¤W¤É(ÅÜ²M·¡);¨S¥´¤¤ ¡÷ alpha ©¹¤U­°(ÅÜ³z©ú)
-///   4. alpha §C©óìH­È ¡÷ ¦Û§Ú¾P·´(Destroy¦Û¤v)
-///
-/// ³]­p²z©À(¹ï·Ó¡m¶i«×§ó·s¡n¤å¥óªºÃöÁä¨Mµ¦):
-///   ¸Ô²Ó¤¶­±¬O¡u§¹¥ş¿W¥ßºŞ²z¥Í©R¶g´Á¡vªºª«¥ó,¤£¨Ì¿à GazeDwellManager
-///   ¨C´V°O±o¨ÓºŞ¥¦¡CGazeDwellManager ¥u­t³d¡u¥Í¦¨¡v,¥Í¦¨¤§«á³oÁû¸}¥»
-///   ¦Û¤v­t³d¡u¬¡¦h¤[¡B¤°»ò®É­Ô¸Ó¦º¡v¡C
-///
-/// ¡i¥»¦¸·s¼W¡jª©­±Äæ¦ì±q­ì¥»ªº¡u©m¦W/ª¬ºA¡v¨â®æ¡AÂX¥R¦¨§¹¾ãªº±Mª`«×²Ó¶µ¡G
-///   ©m¦W¡Bª¬ºA(¬õ¶Àºñ¿O¸¹¤å¦r)¡B°Ñ»P«×¡B¿ùÃD²v¡B­«½ÆÆ[¬İ¤ù¬q¡B´úÅç°Ñ»P²v¡C
-///   ¹ïÀ³«áºİ /api/admin/dashboard ªº metrics ¸ê®Æ¡A¥Ñ GazeDwellManager
-///   ¬d§¹ StudentDetailData ¤§«á¡A³z¹LÂX¥Rª©ªº SetContent() ¤@¦¸©Ê¶Ç¶i¨Ó¡C
+/// æ›åœ¨ DetailPanel ä¸Šï¼Œè² è²¬é¢æ¿è‡ªå·±çš„ä½ç½®ã€å¤–è§€èˆ‡ç”Ÿå‘½é€±æœŸã€‚
+///   - ä½ç½®ï¼šè·Ÿè‘— QR ç¢¼èµ°ï¼Œä¸­å¿ƒå°æº–ç‡ˆè™Ÿï¼Œå¾€æ”å½±æ©Ÿæ–¹å‘æ‹‰è¿‘ï¼Œè“‹åœ¨ç‡ˆè™Ÿå‰é¢
+///   - QR ç¢¼è¢«ç³»çµ±ç§»é™¤æ™‚ï¼Œé¢æ¿åœåœ¨æœ€å¾Œä½ç½®ï¼Œäº¤çµ¦ã€Œé›¢é–‹ç•«é¢ã€è¦å‰‡è™•ç†
+///   - å³ä¸Šè§’è‡ªå‹•ç”¢ç”Ÿé—œé–‰éˆ•ï¼Œç”± GazeDwellManager åˆ¤æ–·è¦–ç·š Dwell å¾Œå‘¼å« Close()
+///   - å­˜æ´»ï¼šåœ¨ç•«é¢å…§å°±ç¶­æŒï¼›å¯è¦‹é¢ç©ä¸è¶³è¶…é offscreenSeconds ç§’æ‰æ·¡å‡º
+///   - æ·¡å‡ºï¼šå¿«é€Ÿé™ä½é€æ˜åº¦ï¼Œåˆ° destroyThreshold ç›´æ¥åˆªé™¤ï¼ˆæ²¿ç”¨åŸç‰ˆçš„ä¿è½æ¶ˆå¤±æ„Ÿï¼‰
 /// </summary>
 public class DetailPanelController : MonoBehaviour
 {
-    [Header("µø½u¨Ó·½")]
-    [Tooltip("©ì¤J³õ´º¸Ìªº EyeTrackingManager ª«¥ó(±¾µÛ EyeGazeProvider)¡C" +
-             "¤£¦Û¤v­«·s°İ OpenXR API,¦Ó¬O°İ³o­Ó¦@¥Îªº Provider," +
-             "Á×§K¦P¤@´V¸Ì¤£¦P¸}¥»®³¨ìªºµø½u¸ê®Æ¤£¤@­P¡C")]
+    [Header("è¦–ç·šä¾†æºï¼ˆä¿ç•™æ¬„ä½ï¼Œç”± GazeDwellManager æŒ‡å®šï¼‰")]
     public EyeGazeProvider eyeGazeProvider;
 
-    [Header("³z©ú«×±±¨î(¹ïÀ³­pµe®Ñ²Ä¤G¶¥¬q)")]
-    [Tooltip("¨C¬í alpha ÅÜ¤Æªº³t«×¡C¼Æ­È¶V¤j,²H¤J/²H¥X¶V§Ö¡C")]
-    public float fadeSpeed = 1.0f;
+    [Header("å­˜æ´»åˆ¤æ–·ï¼ˆç•«é¢å…§ç¶­æŒï¼‰")]
+    [Tooltip("å¯è¦‹é¢ç©æ¯”ä¾‹ä½æ–¼é€™å€‹å€¼å°±ç®—é›¢é–‹ç•«é¢ã€‚0.25 â‰ˆ 3/4 è·‘å‡ºç•«é¢")]
+    [Range(0f, 1f)]
+    public float minVisibleFraction = 0.25f;
 
-    [Tooltip("alpha §C©ó³o­Ó­È®É,¤¶­±ª½±µ¦Û§Ú¾P·´¡C¹ïÀ³­pµe®Ñ¡y§C©ó20%Ãö³¬¡z¡C")]
+    [Tooltip("é›¢é–‹ç•«é¢é€£çºŒè¶…éå¹¾ç§’æ‰é–‹å§‹æ·¡å‡º")]
+    public float offscreenSeconds = 5f;
+
+    [Range(0f, 1f)]
+    public float visibleAlpha = 0.9f;
+
+    [Header("æ·¡å…¥æ·¡å‡º")]
+    [Tooltip("æ·¡å…¥é€Ÿåº¦ï¼ˆæ¯ç§’ alpha è®ŠåŒ–é‡ï¼‰")]
+    public float fadeSpeed = 2f;
+
+    [Tooltip("æ·¡å‡ºé€Ÿåº¦ï¼ˆæ¯ç§’ alpha è®ŠåŒ–é‡ï¼‰ï¼Œæ¯”æ·¡å…¥å¿«ï¼Œæ¶ˆå¤±æ¯”è¼ƒä¿è½")]
+    public float fadeOutSpeed = 3f;
+
+    [Tooltip("æ·¡å‡ºåˆ°é€™å€‹é€æ˜åº¦å°±ç›´æ¥åˆªé™¤ï¼ˆåŸç‰ˆåšæ³•ï¼š20% ç›´æ¥æ¶ˆå¤±ï¼‰")]
     [Range(0f, 1f)]
     public float destroyThreshold = 0.2f;
 
-    [Tooltip("µø½u¼È®É¨S¥´¤¤­±ªO®É¡A¥i¥H®e§Ô´X¬íÄÁ¤£­n°¨¤W¶}©lÅÜ³z©ú¡]Á×§K²´°ÊÂø°T»~§P¡^¡C")]
-    public float missTolerance = 0.3f;
+    [Header("é—œé–‰éˆ•ï¼ˆCanvas å–®ä½ï¼Œé¢æ¿æ˜¯ 300x400ï¼‰")]
+    public float closeButtonSize = 60f;
+    public Color closeButtonColor = new Color(0f, 0f, 0f, 0.55f);
 
-    private float missTimer = 0f;
+    [Header("èƒŒæ™¯ï¼ˆè·Ÿç‡ˆè™Ÿè®Šè‰²ï¼‰")]
+    [Tooltip("æ²’æ‹–æœƒè‡ªå‹•æ‰¾åç‚º Image çš„å­ç‰©ä»¶")]
+    public Image backgroundImage;
+    public Color redColor = new Color(0.60f, 0.12f, 0.12f, 1f);
+    public Color yellowColor = new Color(0.60f, 0.48f, 0.05f, 1f);
+    public Color greenColor = new Color(0.10f, 0.45f, 0.18f, 1f);
+    public Color unknownColor = new Color(0.25f, 0.28f, 0.45f, 1f);
 
-    // ³o­Óª«¥ó¦Û¤v¨­¤Wªº CanvasGroup,¥Î¨ÓÅª¼g alpha¡C
-    // ¤£¥Î public ©ì¦²,¦]¬°¥¦¤@©w¬O±¾¦b¦P¤@­Óª«¥ó¤W,Start() ®É¦Û¤v§ì´N¦n¡C
-    private CanvasGroup canvasGroup;
-
-    [Header("«OÅ@®É¶¡¡]­×¥¿¡GÁ×§K­è¥Í¦¨´N¦]µø½uÁÙ¨S²¾¹L¨Ó¦Ó®ø¥¢¡^")]
-    [Tooltip("­±ªO¥Í¦¨«á³o¬q®É¶¡¤º¡A´Nºâµø½uÁÙ¨S¬İ¨ì¥¦¡A¤]¤£·|¶}©l²H¥X¡AÅı¨Ï¥ÎªÌ¦³®É¶¡§âµø½u±qQR½X²¾¹L¨Ó")]
-    public float graceSeconds = 1.2f;
-
-    private float spawnTime;
-
-    [Header("¤º®eÅã¥Ü¡]²Ä6¨B¡G©m¦W/ª¬ºA¡^")]
-    [Tooltip("©ì¤J DetailPanel ©³¤Uªº StudentName ¤å¦rª«¥ó")]
+    [Header("å…§å®¹é¡¯ç¤º")]
     public TMPro.TMP_Text studentNameText;
-
-    [Tooltip("©ì¤J DetailPanel ©³¤Uªº StatusDuration ¤å¦rª«¥ó¡]Åã¥Ü¬õ¶Àºñ¿O¸¹¤å¦r¡^")]
     public TMPro.TMP_Text statusText;
-
-    // ¡õ¡õ¡õ¡i¥»¦¸·s¼W¡j±Mª`«×²Ó¶µÄæ¦ì¡A¹ïÀ³«áºİ dashboard API ªº metrics ¸ê®Æ ¡õ¡õ¡õ
-    [Header("¤º®eÅã¥Ü¡]·s¼W¡G±Mª`«×²Ó¶µ¡A¹ïÀ³«áºİ metrics ¸ê®Æ¡^")]
-    [Tooltip("©ì¤J Prefab ¤W·s½Æ»s¥X¨Óªº ParticipationText ¤å¦rª«¥ó¡]Åã¥Ü°Ñ»P«×¡^")]
     public TMPro.TMP_Text participationText;
-
-    [Tooltip("©ì¤J Prefab ¤W·s½Æ»s¥X¨Óªº ErrorRateText ¤å¦rª«¥ó¡]Åã¥Ü¿ùÃD²v¡^")]
     public TMPro.TMP_Text errorRateText;
-
-    [Tooltip("©ì¤J Prefab ¤W·s½Æ»s¥X¨Óªº RepeatWatchText ¤å¦rª«¥ó¡]Åã¥Ü­«½ÆÆ[¬İ¤ù¬q¤ñ¨Ò¡^")]
     public TMPro.TMP_Text repeatWatchText;
-
-    [Tooltip("©ì¤J Prefab ¤W·s½Æ»s¥X¨Óªº QuizParticipationText ¤å¦rª«¥ó¡]Åã¥Ü´úÅç°Ñ»P²v¡^")]
     public TMPro.TMP_Text quizParticipationText;
-    // ¡ô¡ô¡ô ·s¼Wµ²§ô ¡ô¡ô¡ô
 
-    void Start()
+    /// <summary>GazeDwellManager ç”¨ä¾†åˆ¤æ–·è¦–ç·šæ˜¯å¦æ‰“ä¸­é—œé–‰éˆ•</summary>
+    public Collider CloseButtonCollider { get; private set; }
+    public bool IsClosing => closing;
+
+    private CanvasGroup canvasGroup;
+    private RectTransform rectTransform;
+    private readonly Vector3[] corners = new Vector3[4];
+    private float offscreenTimer = 0f;
+    private bool closing = false;
+
+    // è·Ÿéš¨ç”¨
+    private Transform anchor;
+    private float heightAboveAnchor;
+    private float forwardOffset;
+    private Vector3 lastBasePosition;
+    private bool hasBasePosition = false;
+
+    void Awake()
     {
-        // GetComponent<T>():¦V¦Û¤v³o­Ó GameObject ­n¡uT ³oºØ¤¸¥ó¡vªº°Ñ·Ó¡C
-        // ³o¤@¨B¬O¥²­nªº¡X¡X«Å§iÅÜ¼Æ¥u¬O¯d¤F¤@­ÓªÅ¦ì,
-        // ­n³z¹L GetComponent ¤~·|¯uªº«ü¦V³õ´º¤¤¨º­Ó¹êÅé¤¸¥ó¡C
         canvasGroup = GetComponent<CanvasGroup>();
+        rectTransform = GetComponent<RectTransform>();
 
-        spawnTime = Time.time;
+        if (backgroundImage == null)
+        {
+            Transform bg = transform.Find("Image");
+            if (bg != null) backgroundImage = bg.GetComponent<Image>();
+        }
 
         if (canvasGroup == null)
-        {
-            // ¨¾§b:¦pªG§Ñ°O¦b Prefab ¤W¥[ CanvasGroup,³o¸Ì·|´£¦­¦b Console ³ø¿ù,
-            // ¦Ó¤£¬Oµ¥¨ì Update() °õ¦æ®É¤~¦]¬° null ¦Ó¾ã­Ó·í±¼,¤è«K°£¿ù¡C
-            Debug.LogError("[DetailPanelController] §ä¤£¨ì CanvasGroup ¤¸¥ó,½Ğ½T»{ Prefab ³]©w¡C");
-        }
+            Debug.LogError("[DetailPanelController] æ‰¾ä¸åˆ° CanvasGroup å…ƒä»¶ï¼Œè«‹ç¢ºèª Prefab è¨­å®šã€‚");
 
-        if (eyeGazeProvider == null)
-        {
-            Debug.LogError("[DetailPanelController] eyeGazeProvider ©|¥¼«ü©w,½Ğ¦b Inspector ©ì¤J¡C");
-        }
+        CreateCloseButton();
     }
 
-    void Update()
+    /// <summary>
+    /// ç”± GazeDwellManager ç”Ÿæˆé¢æ¿å¾Œå‘¼å«ã€‚
+    /// </summary>
+    public void Initialize(Transform markerTransform, float heightAboveMarkerCenter, float towardCameraOffset)
     {
-        // ¨¾§b:¯Ê¥ô¦ó¤@­Ó¨Ì¿à´N¤£°õ¦æÅŞ¿è,Á×§K NullReferenceException Åı¹CÀ¸¾ã­Ó°±¦í¡C
-        if (canvasGroup == null || eyeGazeProvider == null)
+        anchor = markerTransform;
+        heightAboveAnchor = heightAboveMarkerCenter;
+        forwardOffset = towardCameraOffset;
+        UpdatePose(); // ç”Ÿæˆç•¶å¹€å°±æ”¾åˆ°æ­£ç¢ºä½ç½®ï¼Œé¿å…é–ƒä¸€ä¸‹
+    }
+
+    /// <summary>
+    /// é–‹å§‹æ·¡å‡ºï¼ˆçœ¼å‹•é—œé–‰éˆ•æˆ–é›¢é–‹ç•«é¢å¤ªä¹…éƒ½æœƒå‘¼å«ï¼‰
+    /// </summary>
+    public void Close()
+    {
+        closing = true;
+        if (CloseButtonCollider != null) CloseButtonCollider.enabled = false;
+    }
+
+    void LateUpdate()
+    {
+        if (canvasGroup == null) return;
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        UpdatePose();
+
+        if (!closing)
         {
+            bool inView = GetVisibleFraction(cam) >= minVisibleFraction;
+
+            if (inView)
+            {
+                offscreenTimer = 0f;
+                canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, visibleAlpha, fadeSpeed * Time.deltaTime);
+                return;
+            }
+
+            offscreenTimer += Time.deltaTime;
+            if (offscreenTimer >= offscreenSeconds) Close();
             return;
         }
 
-        // GazeCheckResult ¦³¤TºØ¥i¯à:
-        //   HitSelf   ¡÷ µø½u¥´¤¤¦Û¤v ¡÷ alpha ¤W¤É
-        //   Missed    ¡÷ µø½u¨S¥´¤¤¦Û¤v(¥´¨ì§OªºªF¦è,©Î§¹¥ş¨S¥´¨ì¥ô¦óªF¦è) ¡÷ alpha ¤U­°
-        //   NoGazeData ¡÷ ³o¤@´Vµø½u¸ê®Æ¥»¨­´NµL®Ä(¯w²´¡B¼È®É¿ò¥¢°lÂÜ) ¡÷ ºû«ù­ìª¬,¤£¤É¤£­°
-        // ¯S§O³B²z NoGazeData,¬O¬°¤FÁ×§K¨Ï¥ÎªÌ¥u¬O¯w¤F¤@¤U²´,
-        // ¤¶­±´N³Q»~§P¦¨¡u¨S¦b¬İ¡v¦Ó¶}©l°{Ã{ÅÜ²H¡C
-        GazeCheckResult result = CheckGazeAgainstSelf();
-
-        // Time.deltaTime = ¤W¤@´V¨ì³o¤@´V¸g¹Lªº¬í¼Æ¡C
-        // ¥Î¡u³t«× ¡Ñ deltaTime¡v¦Ó¤£¬Oª½±µ¥[´î©T©w­È,
-        // ¬O¬°¤FÅı alpha ÅÜ¤Æ³t«×¸òµe­±§ó·s§ÖºC(FPS)µLÃö,
-        // ¤£·|¦]¬°¸Ë¸m®Ä¯à¤£¦P¦Ó²H¤J²H¥X³t«×©¿§Ö©¿ºC¡C
-        bool inGracePeriod = (Time.time - spawnTime) < graceSeconds;
-
-        if (result == GazeCheckResult.HitSelf)
-        {
-            canvasGroup.alpha += fadeSpeed * Time.deltaTime;
-        }
-        else if (result == GazeCheckResult.Missed && !inGracePeriod)
-        {
-            // «OÅ@®É¶¡¤º§Y¨Ï¨S³Q¬İ¨ì¡A¤]¥ı¤£²H¥X¡Aµ¹¨Ï¥ÎªÌ¤ÏÀ³®É¶¡
-            canvasGroup.alpha -= fadeSpeed * Time.deltaTime;
-        }
-        // result == GazeCheckResult.NoGazeData ®É,¤°»ò³£¤£°µ,alpha ºû«ù­ì­È¡C
-
-        // Mathf.Clamp01:§â alpha ±j¨î§¨¦b 0~1 ¤§¶¡,
-        // Á×§K¦]¬°³sÄò¦n´X´V©¹¦P¤@­Ó¤è¦V¥[/´î,¼Æ­È½Ä¥X¦X²z½d³ò(¨Ò¦pÅÜ¦¨ -0.4 ©Î 1.7)¡C
-        canvasGroup.alpha = Mathf.Clamp01(canvasGroup.alpha);
-
-        // ¹ïÀ³­pµe®Ñ:¡u³z©ú«×§C©ó20% ¡÷ ª½±µ§R°£/Ãö³¬¤¶­±¡v
-        if (canvasGroup.alpha <= destroyThreshold)
-        {
-            Destroy(gameObject);
-        }
+        // å¿«é€Ÿæ·¡å‡ºï¼Œåˆ°é–€æª»ç›´æ¥åˆªé™¤
+        canvasGroup.alpha = Mathf.MoveTowards(canvasGroup.alpha, 0f, fadeOutSpeed * Time.deltaTime);
+        if (canvasGroup.alpha <= destroyThreshold) Destroy(gameObject);
     }
 
     /// <summary>
-    /// ³o¤@´Vµø½u§P©wªº¤TºØ¥i¯àµ²ªG¡C
-    /// ©î¦¨¤TºA(¦Ó¤£¬O³æ¯Âªº true/false),¬O¬°¤F§â¡u¨S¥´¤¤§Ú¡v¸ò
-    /// ¡u³o¤@´V®Ú¥»¨S¦³¦³®Äµø½u¸ê®Æ(¯w²´/¼È®É¿ò¥¢°lÂÜ)¡v¤À¶}³B²z¡X¡X
-    /// «áªÌ¤£¸Ó³Q·í¦¨¡u¨Ï¥ÎªÌ¤£·Q¬İ¤F¡v¡C
+    /// ä½ç½®ï¼ç‡ˆè™Ÿä½ç½®ï¼ˆQR ä¸­å¿ƒå¾€ä¸–ç•Œæ­£ä¸Šæ–¹ï¼‰ï¼‹å¾€æ”å½±æ©Ÿæ‹‰è¿‘ï¼›æœå‘ï¼é¢å°æ”å½±æ©Ÿ
     /// </summary>
-    private enum GazeCheckResult
+    private void UpdatePose()
     {
-        HitSelf,      // µø½u¥´¤¤¦Û¤v
-        Missed,       // µø½u¦³®Ä,¦ı¨S¥´¤¤¦Û¤v(¥´¨ì§OªºªF¦è,©Î¤°»ò³£¨S¥´¨ì)
-        NoGazeData    // ³o¤@´V EyeGazeProvider µ¹¤£¥X¦³®Äµø½u¸ê®Æ
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        if (anchor != null)
+        {
+            lastBasePosition = anchor.position + Vector3.up * heightAboveAnchor;
+            hasBasePosition = true;
+        }
+        // anchor è¢«ç³»çµ±ç§»é™¤ï¼ˆ== nullï¼‰â†’ æ²¿ç”¨æœ€å¾Œä½ç½®
+
+        if (hasBasePosition)
+        {
+            Vector3 toCam = cam.transform.position - lastBasePosition;
+            if (toCam.sqrMagnitude > 0.0001f)
+                transform.position = lastBasePosition + toCam.normalized * forwardOffset;
+        }
+
+        Vector3 lookDir = transform.position - cam.transform.position;
+        if (lookDir.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.LookRotation(lookDir, Vector3.up);
     }
 
     /// <summary>
-    /// ¦V EyeGazeProvider ­n³o¤@´Vªºµø½u Ray,¦A®³³o±ø Ray ¥hµo Raycast,
-    /// §PÂ_¦³¨S¦³¥´¤¤¡u¦Û¤v¡vªº Collider¡C
-    ///
-    /// ª`·N:³o¸Ì¨S¦³°µ Dwell ­p®É²Ö¥[,¦]¬°¨º¬O GazeDwellManager ¦b
-    /// ¡u²Ä¤@¶¥¬q¶}¤¶­±¡v®É¤w¸g°µ¹Lªº¨Æ¡C³o¸Ì¥u¦^µª¡u³o¤@´Vªºª¬ºA¡v,
-    /// ¥Ñ Update() ª½±µ¹ïÀ³¦¨ alpha ¸Ó©¹­ş­Ó¤è¦V¨«¤@¤p¨B¡BÁÙ¬Oºû«ù­ì­È¡C
+    /// åœ¨é¢æ¿å³ä¸Šè§’ç”¢ç”Ÿé—œé–‰éˆ•ï¼šåŠé€æ˜é»‘åº• + X + BoxColliderã€‚
+    /// Collider æ¯”é¢æ¿æœ¬é«”æ›´é è¿‘æ”å½±æ©Ÿã€ä¹Ÿæ›´åšï¼Œç¢ºä¿è¦–ç·šå…ˆæ‰“ä¸­å®ƒã€‚
     /// </summary>
-    private GazeCheckResult CheckGazeAgainstSelf()
+    private void CreateCloseButton()
     {
-        // EyeGazeProvider µ¹ªº¬O TryGetGazeRay(out origin, out direction),
-        // ¦^¶Ç bool ¥Nªí¡u³o¤@´Vµø½u¸ê®Æ¬O§_¦³®Ä°lÂÜ¤¤¡v¡X¡X
-        // ¤£¬O­ì¥»²q´úªº GetGazeRay() ª½±µ¦^¶Ç Ray¡C
-        bool hasValidGaze = eyeGazeProvider.TryGetGazeRay(out Vector3 origin, out Vector3 direction);
+        GameObject btn = new GameObject("CloseButton", typeof(RectTransform));
+        btn.transform.SetParent(transform, false);
 
-        if (!hasValidGaze)
-        {
-            // ¨Ï¥ÎªÌ¥i¯à¯w²´,©Îµø½u¼È®É¿ò¥¢°lÂÜ,³o¤@´V¤£¥Nªí¡u¨S¦b¬İ¡v¡C
-            return GazeCheckResult.NoGazeData;
-        }
+        RectTransform rt = btn.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
+        rt.pivot = new Vector2(1f, 1f);
+        rt.sizeDelta = new Vector2(closeButtonSize, closeButtonSize);
+        rt.anchoredPosition3D = new Vector3(-10f, -10f, -15f); // è²  Z = æœæ”å½±æ©Ÿæ–¹å‘
 
-        Ray gazeRay = new Ray(origin, direction);
+        Image img = btn.AddComponent<Image>();
+        img.color = closeButtonColor;
 
-        RaycastHit hit;
-        if (Physics.Raycast(gazeRay, out hit))
-        {
-            // ³õ´º¸Ì¥i¯à¦P®É¦s¦b¿O¸¹­±ªO¡B¨ä¥Lª«¥óªº Collider,
-            // ³o¸Ì­n½T»{ Raycast ¯u¥¿¥´¤¤ªºª«¥ó¡u´N¬O§Ú¦Û¤v¡v,¤£¬O§OªºªF¦è¡C
-            if (hit.collider.gameObject == this.gameObject)
-            {
-                return GazeCheckResult.HitSelf;
-            }
-        }
+        GameObject textGo = new GameObject("X", typeof(RectTransform));
+        textGo.transform.SetParent(btn.transform, false);
+        RectTransform trt = textGo.GetComponent<RectTransform>();
+        trt.anchorMin = Vector2.zero;
+        trt.anchorMax = Vector2.one;
+        trt.offsetMin = trt.offsetMax = Vector2.zero;
 
-        return GazeCheckResult.Missed;
+        var tmp = textGo.AddComponent<TMPro.TextMeshProUGUI>();
+        if (studentNameText != null) tmp.font = studentNameText.font;
+        tmp.text = "X";
+        tmp.fontSize = closeButtonSize * 0.6f;
+        tmp.alignment = TMPro.TextAlignmentOptions.Center;
+        tmp.color = Color.white;
+
+        BoxCollider col = btn.AddComponent<BoxCollider>();
+        col.size = new Vector3(closeButtonSize, closeButtonSize, 40f);
+        col.center = Vector3.zero;
+        CloseButtonCollider = col;
     }
 
-    /// <summary>
-    /// ¥Ñ GazeDwellManager ¦b¥Í¦¨³o­Ó­±ªO«á©I¥s¡A§â¾Ç¥Í¸ê®Æ¶ñ¶i¥h¡C
-    ///
-    /// ¡i¥»¦¸ÂX¥R¡j­ì¥»¥u¦³ studentName / status ¨â­Ó°Ñ¼Æ¡A
-    /// ²{¦b¸É¤W¥|­Ó±Mª`«×²Ó¶µ¡A¹ïÀ³«áºİ /api/admin/dashboard ªº metrics Äæ¦ì¡G
-    ///   participation      ¡÷ effectiveParticipationRate¡]°Ñ»P«×¡A0~1 ªº¤ñ¨Ò¡^
-    ///   errorRate          ¡÷ 1 - quizAccuracy¡]¿ùÃD²v¡A¥Î¥¿½T²v¤Ï±À¡^
-    ///   repeatWatch        ¡÷ repeatWatchRatio¡]­«½ÆÆ[¬İ¤ù¬q¤ñ¨Ò¡^
-    ///   quizParticipation  ¡÷ quizParticipation¡]´úÅç°Ñ»P²v¡^
-    ///
-    /// ³o¨Ç¼Æ­È²Î¤@¥H¡u0~1 ªº¤ñ¨Ò¡v¶Ç¶i¨Ó¡AÂà¦¨¦Ê¤À¤ñ¦r¦êªº¤u§@¥æµ¹³o¸Ì³B²z¡A
-    /// ©I¥sºİ¡]GazeDwellManager¡^¥u»İ­n§â­ì©l¤ñ¨Ò¥á¶i¨Ó´N¦n¡A¤£¥Î­«½Æ¼g®æ¦¡¤ÆÅŞ¿è¡C
-    /// </summary>
+    private float GetVisibleFraction(Camera cam)
+    {
+        if (rectTransform == null)
+        {
+            Vector3 v = cam.WorldToViewportPoint(transform.position);
+            return (v.z > 0 && v.x >= 0 && v.x <= 1 && v.y >= 0 && v.y <= 1) ? 1f : 0f;
+        }
+
+        rectTransform.GetWorldCorners(corners);
+
+        float minX = float.MaxValue, minY = float.MaxValue;
+        float maxX = float.MinValue, maxY = float.MinValue;
+
+        for (int i = 0; i < 4; i++)
+        {
+            Vector3 v = cam.WorldToViewportPoint(corners[i]);
+            if (v.z <= 0f) return 0f;
+            minX = Mathf.Min(minX, v.x); maxX = Mathf.Max(maxX, v.x);
+            minY = Mathf.Min(minY, v.y); maxY = Mathf.Max(maxY, v.y);
+        }
+
+        float area = (maxX - minX) * (maxY - minY);
+        if (area <= 0f) return 0f;
+
+        float overlapW = Mathf.Max(0f, Mathf.Min(maxX, 1f) - Mathf.Max(minX, 0f));
+        float overlapH = Mathf.Max(0f, Mathf.Min(maxY, 1f) - Mathf.Max(minY, 0f));
+        return (overlapW * overlapH) / area;
+    }
+
+    public void SetStatusColor(string scoreColor)
+    {
+        if (backgroundImage == null) return;
+
+        switch (scoreColor?.ToLower())
+        {
+            case "red": backgroundImage.color = redColor; break;
+            case "yellow": backgroundImage.color = yellowColor; break;
+            case "green": backgroundImage.color = greenColor; break;
+            default: backgroundImage.color = unknownColor; break;
+        }
+    }
+
     public void SetContent(string studentName, string status, float participation, float errorRate, float repeatWatch, float quizParticipation)
     {
         if (studentNameText != null) studentNameText.text = studentName;
         if (statusText != null) statusText.text = status;
-
-        // ¡õ¡õ¡õ ·s¼Wªº¥|­ÓÄæ¦ì¡A¼gªk²Î¤@¡GF0 = ¥|±Ë¤­¤J¨ì¾ã¼Æ¦ìªº¦Ê¤À¤ñ ¡õ¡õ¡õ
-        if (participationText != null) participationText.text = $"°Ñ»P«×: {participation * 100f:F0}%";
-        if (errorRateText != null) errorRateText.text = $"¿ùÃD²v: {errorRate * 100f:F0}%";
-        if (repeatWatchText != null) repeatWatchText.text = $"­«½ÆÆ[¬İ: {repeatWatch * 100f:F0}%";
-        if (quizParticipationText != null) quizParticipationText.text = $"´úÅç°Ñ»P²v: {quizParticipation * 100f:F0}%";
+        if (participationText != null) participationText.text = $"åƒèˆ‡åº¦: {participation * 100f:F0}%";
+        if (errorRateText != null) errorRateText.text = $"éŒ¯é¡Œç‡: {errorRate * 100f:F0}%";
+        if (repeatWatchText != null) repeatWatchText.text = $"é‡è¤‡è§€çœ‹: {repeatWatch * 100f:F0}%";
+        if (quizParticipationText != null) quizParticipationText.text = $"æ¸¬é©—åƒèˆ‡ç‡: {quizParticipation * 100f:F0}%";
     }
 }

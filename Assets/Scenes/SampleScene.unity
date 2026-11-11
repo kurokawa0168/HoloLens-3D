@@ -926,6 +926,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   markerManager: {fileID: 1964602098}
   studentDatabase: {fileID: 207147541}
+  studentDetailData: {fileID: 1543426055}
+  indicatorMaterial: {fileID: 2100000, guid: 4d1a31367f2655842911b30cd2f78e57, type: 2}
+  lightOffset: 0.05
+  lightSize: 0.04
+  outlineScale: 1.4
+  showNameLabel: 1
+  nameShowDistance: 1
+  nameHideMargin: 0.1
+  nameFontSize: 36
+  nameAboveLight: 0.06
 --- !u!114 &1964602102
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -939,6 +949,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   markerManager: {fileID: 1964602098}
+  cubeSize: 0.18
+  fallbackLightOffset: 0.05
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
