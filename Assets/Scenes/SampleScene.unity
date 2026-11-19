@@ -841,7 +841,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0eea60c1b6ae27341a919835c73ed661, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  apiUrl: http://localhost:8080/api/class-status
+  apiUrl: https://hololens-723683201885.asia-east1.run.app/api/class-status
   refreshInterval: 3
 --- !u!1 &1964602097
 GameObject:

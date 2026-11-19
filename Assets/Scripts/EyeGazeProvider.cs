@@ -42,7 +42,7 @@ public class EyeGazeProvider : MonoBehaviour
 
         if (TryGetGazeRay(out Vector3 gazeOrigin, out Vector3 gazeDirection))
         {
-            Debug.Log($"視線起點: {gazeOrigin}, 視線方向: {gazeDirection}");
+            //Debug.Log($"視線起點: {gazeOrigin}, 視線方向: {gazeDirection}");
 
             // ↓↓↓ 之後 Dwell 偵測 / Physics.Raycast 會接在這裡 ↓↓↓
         }

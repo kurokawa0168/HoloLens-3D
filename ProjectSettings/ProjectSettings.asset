@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: DefaultCompany
-  productName: Hololens-3D+eye.x2
+  productName: HoloLensClassMonitor
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -849,14 +849,14 @@ PlayerSettings:
   apiCompatibilityLevelPerPlatform: {}
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: Hololens-3Deye
+  metroPackageName: HoloLens-ClassMonitor
   metroPackageVersion: 1.0.0.0
   metroCertificatePath: Assets/WSATestCertificate.pfx
   metroCertificatePassword: 
   metroCertificateSubject: DefaultCompany
   metroCertificateIssuer: DefaultCompany
   metroCertificateNotAfter: 80a9bd530242de01
-  metroApplicationDescription: HoloLens 3D
+  metroApplicationDescription: "HoloLens\u8AB2\u5802\u5B78\u7FD2\u98A8\u96AA\u8A55\u4F30\u7CFB\u7D71"
   wsaImages: {}
   metroTileShortName: HoloLens 3D
   metroTileShowName: 0
