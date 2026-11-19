@@ -841,8 +841,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0eea60c1b6ae27341a919835c73ed661, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  apiUrl: https://hololens-723683201885.asia-east1.run.app/api/admin/dashboard?timeRange=all
-  refreshInterval: 5
+  apiUrl: http://localhost:8080/api/class-status
+  refreshInterval: 3
 --- !u!1 &1964602097
 GameObject:
   m_ObjectHideFlags: 0
@@ -932,10 +932,13 @@ MonoBehaviour:
   lightSize: 0.04
   outlineScale: 1.4
   showNameLabel: 1
-  nameShowDistance: 1
+  nameMinDistance: 1.2
+  nameMaxDistance: 3.5
   nameHideMargin: 0.1
   nameFontSize: 36
   nameAboveLight: 0.06
+  scaleWithDistance: 0
+  referenceDistance: 1.5
 --- !u!114 &1964602102
 MonoBehaviour:
   m_ObjectHideFlags: 0

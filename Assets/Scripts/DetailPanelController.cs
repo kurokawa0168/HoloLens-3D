@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>
@@ -39,6 +40,8 @@ public class DetailPanelController : MonoBehaviour
     [Header("關閉鈕（Canvas 單位，面板是 300x400）")]
     public float closeButtonSize = 60f;
     public Color closeButtonColor = new Color(0f, 0f, 0f, 0.55f);
+    [Tooltip("感應範圍比看得到的 X 多出多少（往右、往上延伸，不會蓋到姓名）")]
+    public float closeHitPadding = 30f;
 
     [Header("背景（跟燈號變色）")]
     [Tooltip("沒拖會自動找名為 Image 的子物件")]
@@ -51,10 +54,18 @@ public class DetailPanelController : MonoBehaviour
     [Header("內容顯示")]
     public TMPro.TMP_Text studentNameText;
     public TMPro.TMP_Text statusText;
-    public TMPro.TMP_Text participationText;
+
+    // FormerlySerializedAs：欄位改名後，Prefab 上原本拉好的參照會自動保留
+    [FormerlySerializedAs("participationText")]
+    public TMPro.TMP_Text progressText;
+
+    [FormerlySerializedAs("quizParticipationText")]
+    public TMPro.TMP_Text answerRateText;
+
     public TMPro.TMP_Text errorRateText;
-    public TMPro.TMP_Text repeatWatchText;
-    public TMPro.TMP_Text quizParticipationText;
+
+    [FormerlySerializedAs("repeatWatchText")]
+    public TMPro.TMP_Text repeatText;
 
     /// <summary>GazeDwellManager 用來判斷視線是否打中關閉鈕</summary>
     public Collider CloseButtonCollider { get; private set; }
@@ -198,9 +209,13 @@ public class DetailPanelController : MonoBehaviour
         tmp.alignment = TMPro.TextAlignmentOptions.Center;
         tmp.color = Color.white;
 
+        // 關閉鈕的原點（pivot）在它自己的右上角，看得到的 X 佔 (-size ~ 0, -size ~ 0)。
+        // 碰撞箱對齊這塊，再往右、往上（面板外側）多延伸 closeHitPadding。
+        float s = closeButtonSize;
+        float p = closeHitPadding;
         BoxCollider col = btn.AddComponent<BoxCollider>();
-        col.size = new Vector3(closeButtonSize, closeButtonSize, 40f);
-        col.center = Vector3.zero;
+        col.size = new Vector3(s + p, s + p, 40f);
+        col.center = new Vector3((p - s) / 2f, (p - s) / 2f, 0f);
         CloseButtonCollider = col;
     }
 
@@ -246,13 +261,21 @@ public class DetailPanelController : MonoBehaviour
         }
     }
 
-    public void SetContent(string studentName, string status, float participation, float errorRate, float repeatWatch, float quizParticipation)
+    /// <summary>
+    /// 填入面板內容。文字由後端組好，直接顯示；傳空字串就清空該行。
+    /// </summary>
+    public void SetContent(string studentName, string status, string progress, string answerRate, string errorRate, string repeat)
     {
         if (studentNameText != null) studentNameText.text = studentName;
         if (statusText != null) statusText.text = status;
-        if (participationText != null) participationText.text = $"參與度: {participation * 100f:F0}%";
-        if (errorRateText != null) errorRateText.text = $"錯題率: {errorRate * 100f:F0}%";
-        if (repeatWatchText != null) repeatWatchText.text = $"重複觀看: {repeatWatch * 100f:F0}%";
-        if (quizParticipationText != null) quizParticipationText.text = $"測驗參與率: {quizParticipation * 100f:F0}%";
+        if (progressText != null) progressText.text = Label("進度", progress);
+        if (answerRateText != null) answerRateText.text = Label("做題率", answerRate);
+        if (errorRateText != null) errorRateText.text = Label("錯題率", errorRate);
+        if (repeatText != null) repeatText.text = Label("重看", repeat);
+    }
+
+    private static string Label(string title, string value)
+    {
+        return string.IsNullOrEmpty(value) ? "" : $"{title}：{value}";
     }
 }

@@ -251,7 +251,7 @@ public class GazeDwellManager : MonoBehaviour
 
         if (!studentDetailData.IsLoaded)
         {
-            controller.SetContent("資料載入中...", "", 0f, 0f, 0f, 0f);
+            controller.SetContent("資料載入中...", "", "", "", "", "");
             controller.SetStatusColor(null);
             return;
         }
@@ -261,18 +261,28 @@ public class GazeDwellManager : MonoBehaviour
         {
             controller.SetContent(
                 record.name,
-                record.scoreColor,
-                record.effectiveParticipationRate,
-                1f - record.quizAccuracy, // 後端只有正確率，反推錯題率
-                record.repeatWatchRatio,
-                record.quizParticipation
+                BuildStatusLine(record),
+                record.progress_text,
+                record.answer_rate_text,
+                record.error_rate_text,
+                record.repeat_text
             );
-            controller.SetStatusColor(record.scoreColor);
+            controller.SetStatusColor(record.light); // gray 會套用 unknownColor
         }
         else
         {
-            controller.SetContent("未登錄學生", $"QR: {seatId}", 0f, 0f, 0f, 0f);
+            controller.SetContent("未登錄學生", $"QR: {seatId}", "", "", "", "");
             controller.SetStatusColor(null);
         }
+    }
+
+    /// <summary>
+    /// 狀態那一行：閒置時用【】強調；有晚到就加註在後面
+    /// </summary>
+    private static string BuildStatusLine(StudentDetailRecord record)
+    {
+        string line = record.state == "idle" ? $"【{record.status_text}】" : record.status_text;
+        if (!string.IsNullOrEmpty(record.late_text)) line += $"　{record.late_text}";
+        return line;
     }
 }
